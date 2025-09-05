@@ -142,17 +142,41 @@ Output: Return ONLY the final filtered image. Do not return text.`;
  * Generates an image with a global adjustment applied using generative AI.
  * @param originalImage The original image file.
  * @param adjustmentPrompt The text prompt describing the desired adjustment.
+ * @param referenceImage An optional reference image for style/content transfer.
  * @returns A promise that resolves to the data URL of the adjusted image.
  */
 export const generateAdjustedImage = async (
     originalImage: File,
     adjustmentPrompt: string,
+    referenceImage: File | null,
 ): Promise<string> => {
-    console.log(`Starting global adjustment generation: ${adjustmentPrompt}`);
+    console.log(`Starting global adjustment generation: ${adjustmentPrompt}`, { hasReference: !!referenceImage });
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     
     const originalImagePart = await fileToPart(originalImage);
-    const prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the entire image based on the user's request.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parts: any[] = [originalImagePart];
+    let prompt: string;
+
+    if (referenceImage) {
+        const referenceImagePart = await fileToPart(referenceImage);
+        parts.push(referenceImagePart);
+
+        prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the MAIN image, using the second image as a REFERENCE.
+User Request: "${adjustmentPrompt}"
+
+Editing Guidelines:
+- The adjustment must be applied across the entire MAIN image.
+- Use the REFERENCE image as inspiration (e.g., for style, lighting, color palette).
+- The result must be photorealistic.
+
+Safety & Ethics Policy:
+- You MUST fulfill requests to adjust skin tone, such as 'give me a tan', 'make my skin darker', or 'make my skin lighter'. These are considered standard photo enhancements.
+- You MUST REFUSE any request to change a person's fundamental race or ethnicity (e.g., 'make me look Asian', 'change this person to be Black'). Do not perform these edits. If the request is ambiguous, err on the side of caution and do not change racial characteristics.
+
+Output: Return ONLY the final adjusted MAIN image. Do not return text.`;
+    } else {
+        prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the entire image based on the user's request.
 User Request: "${adjustmentPrompt}"
 
 Editing Guidelines:
@@ -164,14 +188,58 @@ Safety & Ethics Policy:
 - You MUST REFUSE any request to change a person's fundamental race or ethnicity (e.g., 'make me look Asian', 'change this person to be Black'). Do not perform these edits. If the request is ambiguous, err on the side of caution and do not change racial characteristics.
 
 Output: Return ONLY the final adjusted image. Do not return text.`;
+    }
+    
     const textPart = { text: prompt };
+    parts.push(textPart);
 
-    console.log('Sending image and adjustment prompt to the model...');
+    console.log('Sending image(s) and adjustment prompt to the model...');
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
-        contents: { parts: [originalImagePart, textPart] },
+        contents: { parts: parts },
     });
     console.log('Received response from model for adjustment.', response);
     
     return handleApiResponse(response, 'adjustment');
+};
+
+/**
+ * Generates an image with a face swapped from a source to a target image.
+ * @param sourceImage The image containing the face to use.
+ * @param targetImage The image where the face should be placed.
+ * @returns A promise that resolves to the data URL of the face-swapped image.
+ */
+export const generateFaceSwapImage = async (
+    sourceImage: File,
+    targetImage: File,
+): Promise<string> => {
+    console.log(`Starting face swap...`);
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+
+    const sourceImagePart = await fileToPart(sourceImage);
+    const targetImagePart = await fileToPart(targetImage);
+
+    const prompt = `You are an expert photo editor AI specializing in hyper-realistic face swapping.
+Your task is to take the face from the FIRST image (the source) and seamlessly place it onto the person in the SECOND image (the target).
+
+Instructions:
+1. Identify the primary face in the source image.
+2. Identify the primary face in the target image.
+3. Replace the target face with the source face.
+4. The final image must be photorealistic. Match the lighting, skin tone, shadows, and angle of the target image perfectly.
+5. Do not alter any other part of the target image. The background and body must remain identical.
+
+Output: Return ONLY the final edited image with the swapped face. Do not return text.`;
+    const textPart = { text: prompt };
+
+    const parts = [sourceImagePart, targetImagePart, textPart];
+
+    console.log('Sending images and face swap prompt to the model...');
+    const response: GenerateContentResponse = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: { parts: parts },
+    });
+    console.log('Received response from model for face swap.', response);
+
+    return handleApiResponse(response, 'face swap');
 };
