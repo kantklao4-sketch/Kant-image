@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Modality } from "@google/genai";
 
 // Helper function to convert a File object to a Gemini API Part
 const fileToPart = async (file: File): Promise<{ inlineData: { mimeType: string; data: string; } }> => {
@@ -98,6 +98,9 @@ Output: Return ONLY the final edited image. Do not return text.`;
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
         contents: { parts: [originalImagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
     });
     console.log('Received response from model.', response);
 
@@ -132,6 +135,9 @@ Output: Return ONLY the final filtered image. Do not return text.`;
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
         contents: { parts: [originalImagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
     });
     console.log('Received response from model for filter.', response);
     
@@ -197,6 +203,9 @@ Output: Return ONLY the final adjusted image. Do not return text.`;
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
         contents: { parts: parts },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
     });
     console.log('Received response from model for adjustment.', response);
     
@@ -238,6 +247,9 @@ Output: Return ONLY the final edited image with the swapped face. Do not return 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
         contents: { parts: parts },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
     });
     console.log('Received response from model for face swap.', response);
 

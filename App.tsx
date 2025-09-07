@@ -14,6 +14,8 @@ import AdjustmentPanel from './components/AdjustmentPanel';
 import CropPanel from './components/CropPanel';
 import { UndoIcon, RedoIcon, EyeIcon, UploadIcon } from './components/icons';
 import StartScreen from './components/StartScreen';
+import ExportModal from './components/ExportModal';
+import ErrorToast from './components/ErrorToast';
 
 // Helper to convert a data URL string to a File object
 const dataURLtoFile = (dataurl: string, filename: string): File => {
@@ -57,6 +59,7 @@ const App: React.FC = () => {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [aspect, setAspect] = useState<number | undefined>();
   const [isComparing, setIsComparing] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentImage = history[historyIndex] ?? null;
@@ -308,18 +311,6 @@ const App: React.FC = () => {
       setSecondaryImage(null);
   }, []);
 
-  const handleDownload = useCallback(() => {
-      if (currentImage) {
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(currentImage);
-          link.download = `edited-${currentImage.name}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(link.href);
-      }
-  }, [currentImage]);
-  
   const handleFileSelect = (files: FileList | null) => {
     if (files && files[0]) {
       handleImageUpload(files[0]);
@@ -360,24 +351,10 @@ const App: React.FC = () => {
     const originalY = Math.round(offsetY * scaleY);
 
     setEditHotspot({ x: originalX, y: originalY });
+    setPrompt(''); // Clear prompt on new selection for better UX
 };
 
   const renderContent = () => {
-    if (error) {
-       return (
-           <div className="text-center animate-fade-in bg-red-500/10 border border-red-500/20 p-8 rounded-lg max-w-2xl mx-auto flex flex-col items-center gap-4">
-            <h2 className="text-2xl font-bold text-red-300">เกิดข้อผิดพลาด</h2>
-            <p className="text-md text-red-400">{error}</p>
-            <button
-                onClick={() => setError(null)}
-                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg text-md transition-colors"
-              >
-                ลองอีกครั้ง
-            </button>
-          </div>
-        );
-    }
-    
     if (!currentImageUrl) {
       return <StartScreen onFileSelect={handleFileSelect} />;
     }
@@ -439,12 +416,16 @@ const App: React.FC = () => {
               </ReactCrop>
             ) : imageDisplay }
 
-            {displayHotspot && !isLoading && activeTab === 'retouch' && (
+            {displayHotspot && !isLoading && activeTab === 'retouch' && prompt.length === 0 && (
                 <div 
-                    className="absolute rounded-full w-6 h-6 bg-blue-500/50 border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2 z-10"
+                    className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center transition-opacity duration-300 animate-fade-in"
                     style={{ left: `${displayHotspot.x}px`, top: `${displayHotspot.y}px` }}
+                    aria-hidden="true"
                 >
-                    <div className="absolute inset-0 rounded-full w-6 h-6 animate-ping bg-blue-400"></div>
+                    {/* Pulsating Ring */}
+                    <div className="absolute h-10 w-10 rounded-full border-2 border-blue-400 animate-pulse-ring"></div>
+                    {/* Center Dot */}
+                    <div className="h-3 w-3 rounded-full bg-white shadow-md border-2 border-blue-500"></div>
                 </div>
             )}
         </div>
@@ -585,10 +566,10 @@ const App: React.FC = () => {
             </button>
 
             <button 
-                onClick={handleDownload}
+                onClick={() => setShowExportModal(true)}
                 className="flex-grow sm:flex-grow-0 ml-auto bg-gradient-to-br from-green-600 to-green-500 text-white font-bold py-3 px-5 rounded-md transition-all duration-300 ease-in-out shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/40 hover:-translate-y-px active:scale-95 active:shadow-inner text-base"
             >
-                ดาวน์โหลดรูปภาพ
+                ส่งออกรูปภาพ
             </button>
         </div>
       </div>
@@ -598,9 +579,11 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen text-gray-100 flex flex-col">
       <Header />
+      {error && <ErrorToast message={error} onClose={() => setError(null)} />}
       <main className={`flex-grow w-full max-w-[1600px] mx-auto p-4 md:p-8 flex justify-center ${currentImage ? 'items-start' : 'items-center'}`}>
         {renderContent()}
       </main>
+      {showExportModal && <ExportModal imageFile={currentImage} onClose={() => setShowExportModal(false)} />}
     </div>
   );
 };

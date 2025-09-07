@@ -1,5 +1,5 @@
 {
-  "name": "กันต์-เกล้า",
+  "name": "🌟-✨-💫-⭐-🌠กันต์-เกล้า🌟-✨-💫-⭐-🌠",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@google/genai": "^1.10.0",
-    "react-image-crop": "^11.0.6"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "@google/genai": "^1.17.0",
+    "react-image-crop": "^11.0.10"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
