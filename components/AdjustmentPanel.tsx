@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { UploadIcon } from './icons';
 
 interface AdjustmentPanelProps {
-  onApplyAdjustment: (prompt: string) => void;
+  onApplyAdjustment: (prompt: string, additionalPrompt: string) => void;
   isLoading: boolean;
   secondaryImage: File | null;
   onSecondaryImageUpload: (file: File) => void;
@@ -17,6 +17,7 @@ interface AdjustmentPanelProps {
 const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({ onApplyAdjustment, isLoading, secondaryImage, onSecondaryImageUpload, onClearSecondaryImage }) => {
   const [selectedPresetPrompt, setSelectedPresetPrompt] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [additionalPrompt, setAdditionalPrompt] = useState('');
   const [secondaryImageUrl, setSecondaryImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,9 +31,9 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({ onApplyAdjustment, is
 
 
   const presets = [
-    { name: 'เบลอพื้นหลัง', prompt: 'Apply a realistic depth-of-field effect, making the background blurry while keeping the main subject in sharp focus.' },
+    { name: 'ปรับปรุงตามข้อความ', prompt: 'Imaginatively enhance this photo. Improve the overall quality (lighting, colors, sharpness) and creatively elevate the scene to be more dramatic, vibrant, and visually stunning. Produce a masterpiece that looks like a professional, artistic edit.' },
+    { name: 'บลอพื้นหลัง', prompt: 'Apply a realistic depth-of-field effect, making the background blurry while keeping the main subject in sharp focus.' },
     { name: 'เพิ่มความคมชัด', prompt: 'Slightly enhance the sharpness and details of the image without making it look unnatural.' },
-    { name: 'ปรับแสงให้อบอุ่น', prompt: 'Adjust the color temperature to give the image warmer, golden-hour style lighting.' },
     { name: 'จัดแสงสตูดิโอ', prompt: 'Add dramatic, professional studio lighting to the main subject.' },
   ];
 
@@ -57,7 +58,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({ onApplyAdjustment, is
 
   const handleApply = () => {
     if (activePrompt || secondaryImage) {
-      onApplyAdjustment(activePrompt);
+      onApplyAdjustment(activePrompt, additionalPrompt);
     }
   };
 
@@ -110,6 +111,14 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({ onApplyAdjustment, is
         onChange={handleCustomChange}
         placeholder="หรืออธิบายการปรับแต่ง (เช่น 'เปลี่ยนพื้นหลังเป็นป่า')"
         className="flex-grow bg-gray-800 border border-gray-600 text-gray-200 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition w-full disabled:cursor-not-allowed disabled:opacity-60 text-base"
+        disabled={isLoading}
+      />
+      <input
+        type="text"
+        value={additionalPrompt}
+        onChange={(e) => setAdditionalPrompt(e.target.value)}
+        placeholder="คำสั่งเพิ่มเติม (ไม่บังคับ)"
+        className="flex-grow bg-gray-800 border border-gray-600 text-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition w-full disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
       />
 

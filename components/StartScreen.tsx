@@ -74,8 +74,17 @@ const StartScreen: React.FC<StartScreenProps> = ({ onFileSelect }) => {
         </p>
         <div className="animate-fade-in-down" style={{ animationDelay: '0.4s' }}>
           <label htmlFor="file-upload" className="cursor-pointer bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold py-4 px-8 text-lg rounded-lg transition-all duration-300 ease-in-out shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-px active:scale-95 inline-flex items-center gap-3">
-            <UploadIcon className="w-6 h-6" />
-            เลือกรูปภาพ หรือลากมาวางที่นี่
+            {isDragging ? (
+              <>
+                <UploadIcon className="w-8 h-8 text-blue-200 animate-pulse" />
+                <span className="text-xl">วางไฟล์ที่นี่เพื่ออัปโหลด</span>
+              </>
+            ) : (
+              <>
+                <UploadIcon className="w-6 h-6" />
+                <span>เลือกรูปภาพ หรือลากมาวางที่นี่</span>
+              </>
+            )}
           </label>
           <input id="file-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
         </div>

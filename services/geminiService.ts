@@ -68,18 +68,24 @@ const handleApiResponse = (
  * @param originalImage The original image file.
  * @param userPrompt The text prompt describing the desired edit.
  * @param hotspot The {x, y} coordinates on the image to focus the edit.
+ * @param additionalPrompt Optional extra instructions for the AI.
+ * @param isTransparent Whether to request a transparent background.
+ * @param scale The scaling factor for the edited element.
  * @returns A promise that resolves to the data URL of the edited image.
  */
 export const generateEditedImage = async (
     originalImage: File,
     userPrompt: string,
-    hotspot: { x: number, y: number }
+    hotspot: { x: number, y: number },
+    additionalPrompt: string,
+    isTransparent: boolean,
+    scale: number
 ): Promise<string> => {
-    console.log('Starting generative edit at:', hotspot);
+    console.log('Starting generative edit at:', hotspot, {isTransparent, scale});
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     
     const originalImagePart = await fileToPart(originalImage);
-    const prompt = `You are an expert photo editor AI. Your task is to perform a natural, localized edit on the provided image based on the user's request.
+    let prompt = `You are an expert photo editor AI. Your task is to perform a natural, localized edit on the provided image based on the user's request.
 User Request: "${userPrompt}"
 Edit Location: Focus on the area around pixel coordinates (x: ${hotspot.x}, y: ${hotspot.y}).
 
@@ -92,6 +98,19 @@ Safety & Ethics Policy:
 - You MUST REFUSE any request to change a person's fundamental race or ethnicity (e.g., 'make me look Asian', 'change this person to be Black'). Do not perform these edits. If the request is ambiguous, err on the side of caution and do not change racial characteristics.
 
 Output: Return ONLY the final edited image. Do not return text.`;
+    
+    if (scale !== 1.0) {
+        prompt += `\nScale Factor: Adjust the size of the added/modified element by a factor of ${scale.toFixed(2)}. For example, a factor of 1.5 means 50% larger, and 0.8 means 20% smaller than its natural size in the scene.`;
+    }
+
+    if (additionalPrompt) {
+        prompt += `\nAdditional Instructions from user: "${additionalPrompt}"`;
+    }
+    
+    if (isTransparent) {
+        prompt += `\nCRITICAL INSTRUCTION: The final output image MUST have a transparent background. Only the edited subject should be visible.`;
+    }
+
     const textPart = { text: prompt };
 
     console.log('Sending image and prompt to the model...');
@@ -111,17 +130,21 @@ Output: Return ONLY the final edited image. Do not return text.`;
  * Generates an image with a filter applied using generative AI.
  * @param originalImage The original image file.
  * @param filterPrompt The text prompt describing the desired filter.
+ * @param additionalPrompt Optional extra instructions for the AI.
+ * @param isTransparent Whether to request a transparent background.
  * @returns A promise that resolves to the data URL of the filtered image.
  */
 export const generateFilteredImage = async (
     originalImage: File,
     filterPrompt: string,
+    additionalPrompt: string,
+    isTransparent: boolean
 ): Promise<string> => {
-    console.log(`Starting filter generation: ${filterPrompt}`);
+    console.log(`Starting filter generation: ${filterPrompt}`, {isTransparent});
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     
     const originalImagePart = await fileToPart(originalImage);
-    const prompt = `You are an expert photo editor AI. Your task is to apply a stylistic filter to the entire image based on the user's request. Do not change the composition or content, only apply the style.
+    let prompt = `You are an expert photo editor AI. Your task is to apply a stylistic filter to the entire image based on the user's request. Do not change the composition or content, only apply the style.
 Filter Request: "${filterPrompt}"
 
 Safety & Ethics Policy:
@@ -129,6 +152,15 @@ Safety & Ethics Policy:
 - You MUST REFUSE any request that explicitly asks to change a person's race (e.g., 'apply a filter to make me look Chinese').
 
 Output: Return ONLY the final filtered image. Do not return text.`;
+
+    if (additionalPrompt) {
+        prompt += `\nAdditional Instructions from user: "${additionalPrompt}"`;
+    }
+
+    if (isTransparent) {
+        prompt += `\nCRITICAL INSTRUCTION: After applying the filter, make the background of the image transparent, keeping only the main subject(s).`;
+    }
+
     const textPart = { text: prompt };
 
     console.log('Sending image and filter prompt to the model...');
@@ -149,14 +181,18 @@ Output: Return ONLY the final filtered image. Do not return text.`;
  * @param originalImage The original image file.
  * @param adjustmentPrompt The text prompt describing the desired adjustment.
  * @param referenceImage An optional reference image for style/content transfer.
+ * @param additionalPrompt Optional extra instructions for the AI.
+ * @param isTransparent Whether to request a transparent background.
  * @returns A promise that resolves to the data URL of the adjusted image.
  */
 export const generateAdjustedImage = async (
     originalImage: File,
     adjustmentPrompt: string,
     referenceImage: File | null,
+    additionalPrompt: string,
+    isTransparent: boolean
 ): Promise<string> => {
-    console.log(`Starting global adjustment generation: ${adjustmentPrompt}`, { hasReference: !!referenceImage });
+    console.log(`Starting global adjustment generation: ${adjustmentPrompt}`, { hasReference: !!referenceImage, isTransparent });
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -195,7 +231,15 @@ Safety & Ethics Policy:
 
 Output: Return ONLY the final adjusted image. Do not return text.`;
     }
+
+    if (additionalPrompt) {
+        prompt += `\nAdditional Instructions from user: "${additionalPrompt}"`;
+    }
     
+    if (isTransparent) {
+        prompt += `\nCRITICAL INSTRUCTION: After applying the adjustment, make the background of the image transparent, keeping only the main subject(s).`;
+    }
+
     const textPart = { text: prompt };
     parts.push(textPart);
 
@@ -216,19 +260,23 @@ Output: Return ONLY the final adjusted image. Do not return text.`;
  * Generates an image with a face swapped from a source to a target image.
  * @param sourceImage The image containing the face to use.
  * @param targetImage The image where the face should be placed.
+ * @param additionalPrompt Optional extra instructions for the AI.
+ * @param isTransparent Whether to request a transparent background.
  * @returns A promise that resolves to the data URL of the face-swapped image.
  */
 export const generateFaceSwapImage = async (
     sourceImage: File,
     targetImage: File,
+    additionalPrompt: string,
+    isTransparent: boolean
 ): Promise<string> => {
-    console.log(`Starting face swap...`);
+    console.log(`Starting face swap...`, { isTransparent });
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
     const sourceImagePart = await fileToPart(sourceImage);
     const targetImagePart = await fileToPart(targetImage);
 
-    const prompt = `You are an expert photo editor AI specializing in hyper-realistic face swapping.
+    let prompt = `You are an expert photo editor AI specializing in hyper-realistic face swapping.
 Your task is to take the face from the FIRST image (the source) and seamlessly place it onto the person in the SECOND image (the target).
 
 Instructions:
@@ -239,6 +287,15 @@ Instructions:
 5. Do not alter any other part of the target image. The background and body must remain identical.
 
 Output: Return ONLY the final edited image with the swapped face. Do not return text.`;
+    
+    if (additionalPrompt) {
+        prompt += `\nAdditional Instructions from user: "${additionalPrompt}"`;
+    }
+    
+    if (isTransparent) {
+        prompt += `\nCRITICAL INSTRUCTION: The final output image MUST have a transparent background. The person with the swapped face should be visible, and the original background should be removed.`;
+    }
+
     const textPart = { text: prompt };
 
     const parts = [sourceImagePart, targetImagePart, textPart];
@@ -254,4 +311,49 @@ Output: Return ONLY the final edited image with the swapped face. Do not return 
     console.log('Received response from model for face swap.', response);
 
     return handleApiResponse(response, 'face swap');
+};
+
+/**
+ * Generates an image with its background removed.
+ * @param originalImage The original image file.
+ * @param additionalPrompt Optional extra instructions for the AI.
+ * @param isTransparent Whether to request a transparent background.
+ * @returns A promise that resolves to the data URL of the image with the background removed.
+ */
+export const generateRemovedBgImage = async (
+    originalImage: File,
+    additionalPrompt: string,
+    isTransparent: boolean
+): Promise<string> => {
+    console.log(`Starting background removal...`, { isTransparent });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+
+    const originalImagePart = await fileToPart(originalImage);
+    let prompt = `You are an expert photo editor AI. Your task is to perfectly remove the background from the provided image, leaving only the main subject(s) cleanly isolated. The edges of the subject should be sharp and precise.`;
+
+    if (additionalPrompt) {
+        prompt += `\nAdditional Instructions from user: "${additionalPrompt}"`;
+    }
+    
+    if (isTransparent) {
+        prompt += `\nCRITICAL INSTRUCTION: The final output image MUST have a transparent background.`;
+    } else {
+        prompt += `\nCRITICAL INSTRUCTION: The final output image MUST have a solid, neutral white background (#FFFFFF).`;
+    }
+
+    prompt += `\n\nOutput: Return ONLY the final edited image. Do not return text.`;
+
+    const textPart = { text: prompt };
+
+    console.log('Sending image and background removal prompt to the model...');
+    const response: GenerateContentResponse = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: { parts: [originalImagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+    console.log('Received response from model for background removal.', response);
+
+    return handleApiResponse(response, 'background removal');
 };

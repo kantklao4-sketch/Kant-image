@@ -6,19 +6,20 @@
 import React, { useState } from 'react';
 
 interface FilterPanelProps {
-  onApplyFilter: (prompt: string) => void;
+  onApplyFilter: (prompt: string, additionalPrompt: string) => void;
   isLoading: boolean;
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({ onApplyFilter, isLoading }) => {
   const [selectedPresetPrompt, setSelectedPresetPrompt] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [additionalPrompt, setAdditionalPrompt] = useState('');
 
   const presets = [
-    { name: 'ซินธ์เวฟ', prompt: 'Apply a vibrant 80s synthwave aesthetic with neon magenta and cyan glows, and subtle scan lines.' },
-    { name: 'อนิเมะ', prompt: 'Give the image a vibrant Japanese anime style, with bold outlines, cel-shading, and saturated colors.' },
-    { name: 'โลโม่', prompt: 'Apply a Lomography-style cross-processing film effect with high-contrast, oversaturated colors, and dark vignetting.' },
-    { name: 'กลิตช์', prompt: 'Transform the image into a futuristic holographic projection with digital glitch effects and chromatic aberration.' },
+    { name: 'ซินธ์เวฟ', prompt: 'Transform the image with a retro 80s synthwave aesthetic. Add vibrant neon glows, especially magenta, cyan, and electric blue. Incorporate a subtle grid pattern on the floor or background if appropriate, and finish with a slight CRT scan line effect for that authentic retro-futuristic feel.' },
+    { name: 'อนิเมะ', prompt: 'Convert the photo into a vibrant, high-quality Japanese anime style. Emphasize expressive eyes, apply clean, bold outlines, use cel-shading for dramatic lighting, and boost color saturation to create a lively, animated look reminiscent of a modern anime film.' },
+    { name: 'โลโม่', prompt: 'Apply a classic Lomography film effect. Create high-contrast, heavily saturated colors with a strong cross-processed look. Introduce a heavy, dark vignette around the edges and a bit of light leak for an authentic, unpredictable, and artistic analog camera feel.' },
+    { name: 'กลิตช์', prompt: 'Induce a futuristic digital glitch effect. Introduce artifacts like datamoshing, pixel sorting, and screen tearing. Add prominent chromatic aberration (RGB color separation) and scan lines to make it look like a corrupted digital file or a malfunctioning holographic projection.' },
   ];
   
   const activePrompt = selectedPresetPrompt || customPrompt;
@@ -35,7 +36,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onApplyFilter, isLoading }) =
 
   const handleApply = () => {
     if (activePrompt) {
-      onApplyFilter(activePrompt);
+      onApplyFilter(activePrompt, additionalPrompt);
     }
   };
 
@@ -62,6 +63,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onApplyFilter, isLoading }) =
         onChange={handleCustomChange}
         placeholder="หรืออธิบายฟิลเตอร์ที่ต้องการ (เช่น 'แสงนีออนสไตล์ยุค 80')"
         className="flex-grow bg-gray-800 border border-gray-600 text-gray-200 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition w-full disabled:cursor-not-allowed disabled:opacity-60 text-base"
+        disabled={isLoading}
+      />
+      <input
+        type="text"
+        value={additionalPrompt}
+        onChange={(e) => setAdditionalPrompt(e.target.value)}
+        placeholder="คำสั่งเพิ่มเติม (ไม่บังคับ)"
+        className="flex-grow bg-gray-800 border border-gray-600 text-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition w-full disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
       />
       
